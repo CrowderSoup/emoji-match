@@ -130,6 +130,39 @@
             font-size: 1em;
             cursor: pointer;
         }
+        #leaderboard-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        #leaderboard-table {
+            width: 80%;
+            max-width: 400px;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        #leaderboard-table th, #leaderboard-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        #leaderboard-table th {
+            background-color: #f2f2f2;
+        }
+        .leaderboard-filters {
+            margin-bottom: 15px;
+        }
+        .leaderboard-filters button {
+            padding: 8px 12px;
+            font-size: 1em;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: 1px solid #888;
+        }
+        .leaderboard-filters button.active {
+            background-color: #bbb;
+        }
     </style>
 </head>
 <body>
@@ -142,6 +175,7 @@
             <button data-size="4">4x4</button>
             <button data-size="6">6x6</button>
         </div>
+        <button id="leaderboard-btn">Leaderboard</button>
     </div>
 
     <div id="game-screen">
@@ -156,12 +190,38 @@
         <div class="modal-content">
             <h2>Congratulations!</h2>
             <p id="final-moves"></p>
-            <button id="play-again-btn">Play Again</button>
+            <form id="leaderboard-form">
+                <input type="text" id="initials-input" placeholder="Enter your initials" maxlength="3" required>
+                <button type="submit">Save Score</button>
+            </form>
         </div>
     </div>
 
+    <div id="leaderboard-screen">
+        <h1>Leaderboard</h1>
+        <div class="leaderboard-filters">
+            <button data-size="2">2x2</button>
+            <button data-size="3">3x3</button>
+            <button data-size="4">4x4</button>
+            <button data-size="6">6x6</button>
+        </div>
+        <table id="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Initials</th>
+                    <th>Moves</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Scores will be inserted here -->
+            </tbody>
+        </table>
+        <button id="back-to-menu-btn">Back to Menu</button>
+    </div>
+
     <script>
-        const emojis = ["😀", "😂", "😍", "🤔", "😎", "😭", "😡", "🤯", "😴", "🥳", "🥺", "🤠", "🤡", "👽", "👾", "🎃", "👻", "🤖", "🧠", "🦷", "👀", "👂", "👃", "👅", "👄", "💋", "💘", "💝", "💖", "💗", "💓", "💞", "💕", "💔", "❤️", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "🤍", "��", "💢", "💥", "💫", "💦", "💨", "🕳️", "💣", "💬", "👁️‍🗨️", "🗨️", "🗯️", "💭", "💤"];
+        const emojis = ["😀", "😂", "😍", "🤔", "😎", "😭", "😡", "🤯", "😴", "🥳", "🥺", "🤠", "🤡", "👽", "👾", "🎃", "👻", "🤖", "🧠", "🦷", "👀", "👂", "👃", "👅", "👄", "💋", "💘", "💝", "💖", "💗", "💓", "💞", "💕", "💔", "❤️", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "🤍", "��", "💢", "💥", "💫", "💦", "💨", "🕳️", "💣", "💬", "👁️‍🗨️", "🗨️", "🗯️", "💭", "��"];
 
         const setupScreen = document.getElementById('setup-screen');
         const gameScreen = document.getElementById('game-screen');
@@ -169,14 +229,74 @@
         const movesSpan = document.getElementById('moves');
         const winModal = document.getElementById('win-modal');
         const finalMovesSpan = document.getElementById('final-moves');
-        const playAgainBtn = document.getElementById('play-again-btn');
         const menuBtn = document.getElementById('menu-btn');
         const sizeButtons = document.querySelectorAll('.size-buttons button');
+        
+        const leaderboardBtn = document.getElementById('leaderboard-btn');
+        const leaderboardScreen = document.getElementById('leaderboard-screen');
+        const leaderboardTable = document.getElementById('leaderboard-table').getElementsByTagName('tbody')[0];
+        const backToMenuBtn = document.getElementById('back-to-menu-btn');
+        const leaderboardForm = document.getElementById('leaderboard-form');
+        const initialsInput = document.getElementById('initials-input');
+        const leaderboardFilterButtons = document.querySelectorAll('.leaderboard-filters button');
 
         let moves = 0;
         let flippedCards = [];
         let matchedPairs = 0;
         let totalPairs = 0;
+        let currentBoardSize = 0;
+
+        const LEADERBOARD_KEY = 'emojiMatchLeaderboard';
+
+        function getLeaderboard() {
+            // Returns the entire leaderboard object, e.g., { "2": [...], "4": [...] }
+            return JSON.parse(localStorage.getItem(LEADERBOARD_KEY)) || {};
+        }
+
+        function saveLeaderboard(leaderboard) {
+            localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(leaderboard));
+        }
+
+        function addScore(size, initials, score) {
+            const leaderboard = getLeaderboard();
+            if (!leaderboard[size]) {
+                leaderboard[size] = [];
+            }
+            const sizeLeaderboard = leaderboard[size];
+            sizeLeaderboard.push({ initials, score });
+            sizeLeaderboard.sort((a, b) => a.score - b.score);
+            leaderboard[size] = sizeLeaderboard.slice(0, 10); // Keep top 10 for the specific size
+            saveLeaderboard(leaderboard);
+        }
+
+        function displayLeaderboard(size) {
+            // Update active button state
+            leaderboardFilterButtons.forEach(button => {
+                if (parseInt(button.dataset.size, 10) === size) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+
+            const allScores = getLeaderboard();
+            const sizeScores = allScores[size] || [];
+            
+            leaderboardTable.innerHTML = '';
+            if (sizeScores.length === 0) {
+                const row = leaderboardTable.insertRow();
+                const cell = row.insertCell();
+                cell.colSpan = 3;
+                cell.textContent = 'No scores yet for this size!';
+            } else {
+                sizeScores.forEach((entry, index) => {
+                    const row = leaderboardTable.insertRow();
+                    row.insertCell().textContent = index + 1;
+                    row.insertCell().textContent = entry.initials;
+                    row.insertCell().textContent = entry.score;
+                });
+            }
+        }
 
         function shuffle(array) {
             let currentIndex = array.length, randomIndex;
@@ -191,7 +311,7 @@
         function getBoardDimensions(size) {
             switch (size) {
                 case 2: return { rows: 2, cols: 2 };
-                case 3: return { rows: 3, cols: 4 }; // 3x3 is not possible for pairs, so we do 3x4
+                case 3: return { rows: 3, cols: 4 };
                 case 4: return { rows: 4, cols: 4 };
                 case 6: return { rows: 6, cols: 6 };
                 default: return { rows: 4, cols: 4 };
@@ -199,6 +319,7 @@
         }
 
         function createBoard(size) {
+            currentBoardSize = size;
             const { rows, cols } = getBoardDimensions(size);
             const numCards = rows * cols;
             totalPairs = numCards / 2;
@@ -283,11 +404,21 @@
         function showMenu() {
             gameScreen.style.display = 'none';
             winModal.style.display = 'none';
+            leaderboardScreen.style.display = 'none';
             setupScreen.style.display = 'block';
+        }
+        
+        function showLeaderboard(size = 4) { // Default to 4x4
+            setupScreen.style.display = 'none';
+            gameScreen.style.display = 'none';
+            winModal.style.display = 'none';
+            leaderboardScreen.style.display = 'flex';
+            displayLeaderboard(size);
         }
 
         function startGame(size) {
             setupScreen.style.display = 'none';
+            leaderboardScreen.style.display = 'none';
             gameScreen.style.display = 'flex';
             createBoard(size);
         }
@@ -299,8 +430,26 @@
             });
         });
 
-        playAgainBtn.addEventListener('click', showMenu);
+        leaderboardForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const initials = initialsInput.value.toUpperCase();
+            if (initials) {
+                addScore(currentBoardSize, initials, moves);
+                initialsInput.value = '';
+                showLeaderboard(currentBoardSize);
+            }
+        });
+
+        leaderboardFilterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const size = parseInt(button.dataset.size, 10);
+                displayLeaderboard(size);
+            });
+        });
+
         menuBtn.addEventListener('click', showMenu);
+        leaderboardBtn.addEventListener('click', () => showLeaderboard()); // Show with default size
+        backToMenuBtn.addEventListener('click', showMenu);
 
         // Initial setup
         showMenu();
