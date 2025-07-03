@@ -31,7 +31,7 @@ Once the build is complete, you can start the application by running the followi
 ./emoji-match
 ```
 
-This will start the web server, and you can access the game in your browser at [http://localhost:8080](http://localhost:8080).
+This will start the web server, and you can access the game in your browser at [http://localhost:3001](http://localhost:3001).
 
 ## Screenshots
 
