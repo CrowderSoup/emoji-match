@@ -1,0 +1,24 @@
+{
+  "name": "emoji-match",
+  "version": "1.0.0",
+  "description": "A 100% vibe coded super simple emoji match memory game.",
+  "main": "index.js",
+  "scripts": {
+    "build": "vite build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CrowderSoup/emoji-match.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CrowderSoup/emoji-match/issues"
+  },
+  "homepage": "https://github.com/CrowderSoup/emoji-match#readme",
+  "devDependencies": {
+    "vite": "^7.0.1"
+  }
+}

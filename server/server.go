@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"embed"
+	"io/fs"
 	"net/http"
 	"time"
 
@@ -19,16 +21,18 @@ type Server struct {
 	mux                     *http.ServeMux
 	http                    *http.Server
 	readStoredProcedureFunc func(filePath string) (string, error)
+	StaticAssets            embed.FS
 }
 
 type Middleware func(http.Handler) http.Handler
 
 // NewServer returns a new server
-func NewServer(config *config.Config, logger *zap.SugaredLogger, mux *http.ServeMux) *Server {
+func NewServer(config *config.Config, logger *zap.SugaredLogger, mux *http.ServeMux, staticAssets embed.FS) *Server {
 	server := &Server{
-		Address: config.Address,
-		Logger:  logger,
-		mux:     mux,
+		Address:      config.Address,
+		Logger:       logger,
+		mux:          mux,
+		StaticAssets: staticAssets,
 	}
 
 	server.initRoutes()
@@ -47,8 +51,11 @@ func NewServer(config *config.Config, logger *zap.SugaredLogger, mux *http.Serve
 
 func (s *Server) initRoutes() {
 	// Register static file path
-	fs := http.FileServer(http.Dir("./public"))
-	staticHandler := http.StripPrefix("/", fs)
+	fs, err := fs.Sub(s.StaticAssets, "dist")
+	if err != nil {
+		s.Logger.Fatal(err)
+	}
+	staticHandler := http.FileServer(http.FS(fs))
 
 	s.wireRoute("/healthcheck", http.HandlerFunc(s.healthcheck))
 	s.wireRoute("/", staticHandler)
@@ -117,4 +124,5 @@ var Module = fx.Options(
 		http.NewServeMux,
 		NewServer,
 	),
+	fx.Invoke(Run),
 )
