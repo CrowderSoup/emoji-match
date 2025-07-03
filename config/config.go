@@ -21,10 +21,10 @@ type Config struct {
 // LoadConfig loads and returns our app config
 func LoadConfig() *Config {
 	config := Config{
-		ServiceName:     getEnv("SERVICENAME", "morphe-api-service"),
+		ServiceName:     getEnv("SERVICENAME", "emoji-match"),
 		Address:         getEnv("ADDRESS", ":3001"),
 		Environment:     getEnv("ENVIRONMENT", "development"),
-		DBUser:          getEnv("DBUSER", "sa"),
+		DBUser:          getEnv("DBUSER", "admin"),
 		DBPassword:      getEnv("DBPASSWORD", "P@ssw0rd"),
 		DBHost:          getEnv("DBHOST", "localhost:1433"),
 		AuthSecret:      getEnv("AUTHSECRET", "some-secret-key"),
