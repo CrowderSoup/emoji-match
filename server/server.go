@@ -16,12 +16,11 @@ import (
 type contextKey string
 
 type Server struct {
-	Address                 string
-	Logger                  *zap.SugaredLogger
-	mux                     *http.ServeMux
-	http                    *http.Server
-	readStoredProcedureFunc func(filePath string) (string, error)
-	StaticAssets            embed.FS
+	Address      string
+	Logger       *zap.SugaredLogger
+	mux          *http.ServeMux
+	http         *http.Server
+	StaticAssets embed.FS
 }
 
 type Middleware func(http.Handler) http.Handler
