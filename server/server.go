@@ -49,9 +49,9 @@ func (s *Server) initRoutes() {
 	// Register static file path
 	fs := http.FileServer(http.Dir("./public"))
 	staticHandler := http.StripPrefix("/", fs)
-	s.mux.Handle("/", staticHandler)
 
 	s.wireRoute("/healthcheck", http.HandlerFunc(s.healthcheck))
+	s.wireRoute("/", staticHandler)
 }
 
 func (s *Server) errorHandler(w http.ResponseWriter, msg string, statusCode int) {
@@ -69,7 +69,19 @@ func (s *Server) sendResponse(w http.ResponseWriter, body string, statusCode int
 func (s *Server) wireRoute(pattern string, handler http.Handler, middlewares ...Middleware) {
 	// Inject some middleware we want everywhere
 	telemetryMiddleware := otelhttp.NewMiddleware(pattern)
-	s.mux.Handle(pattern, s.useMiddlewares(handler, append(middlewares, telemetryMiddleware, CORSMiddleware)...))
+	loggingMiddleware := LoggingMiddleware(s.Logger)
+	s.mux.Handle(
+		pattern,
+		s.useMiddlewares(
+			handler,
+			append(
+				middlewares,
+				telemetryMiddleware,
+				CORSMiddleware,
+				loggingMiddleware,
+			)...,
+		),
+	)
 }
 
 func (s *Server) useMiddlewares(h http.Handler, middlewares ...Middleware) http.Handler {
