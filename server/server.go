@@ -106,12 +106,10 @@ func Run(lc fx.Lifecycle, s *Server) {
 					"Address", s.Address,
 				)
 
-				go s.http.ListenAndServe()
-				return nil
+				return s.http.ListenAndServe()
 			},
 			OnStop: func(ctx context.Context) error {
-				s.http.Shutdown(ctx)
-				return nil
+				return s.http.Shutdown(ctx)
 			},
 		},
 	)
